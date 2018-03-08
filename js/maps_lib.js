@@ -296,7 +296,7 @@ var MapsLib = {
 
     var sql = encodeURIComponent(queryStr.join(" "));
     // console.log(sql)
-    $.ajax({url: "https://www.googleapis.com/fusiontables/v1/query?sql="+sql+"&callback="+callback+"&key="+MapsLib.googleApiKey, dataType: "jsonp"});
+   /* $.ajax({url: "https://www.googleapis.com/fusiontables/v1/query?sql="+sql+"&callback="+callback+"&key="+MapsLib.googleApiKey, dataType: "jsonp"});
   },
 
   handleError: function(json) {
@@ -309,7 +309,7 @@ var MapsLib = {
         console.log(" Message: " + error[row]["message"]);
       }
     }
-  },
+  },*/
 
   getCount: function(whereClause) {
     var selectColumns = "Count()";
@@ -338,7 +338,7 @@ var MapsLib = {
     MapsLib.query(selectColumns, whereClause,"", "", 500, "MapsLib.displayList");
   },
 
-  /* displayList: function(json) {
+   displayList: function(json) {
     MapsLib.handleError(json);
     var columns = json["columns"];
     var rows = json["rows"];
