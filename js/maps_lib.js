@@ -1,9 +1,4 @@
 /*!
- * TEMPLATE INSTRUCTIONS: Look for sections below marked MODIFY and adjust to fit your data and index.html page
- * Learn more at
- * Data Visualization book-in-progress by Jack Dougherty at Trinity College CT
- * http://epress.trincoll.edu/dataviz
- * and
  * Searchable Map Template with Google Fusion Tables
  * http://derekeder.com/searchable_map_template/
  *
@@ -11,7 +6,7 @@
  * Licensed under the MIT license.
  * https://github.com/derekeder/FusionTable-Map-Template/wiki/License
  *
- * Date: 17/03/2014 template modified by Derek Eder and Jack Dougherty
+ * Date: 12/10/2012
  *
  */
 
@@ -24,31 +19,31 @@ var MapsLib = {
   //Setup section - put your Fusion Table details here
   //Using the v1 Fusion Tables API. See https://developers.google.com/fusiontables/docs/v1/migration_guide for more info
 
-  //MODIFY the encrypted Table IDs of your Fusion Tables (found under File => About)
-  //NOTE: numeric IDs will be depricated soon
-  fusionTableId:      "19EZB1j8MYdXPEkFwiOTqjF1NI9L-mg5ZQqpBV85u", //Рубки
-  
-  polygon1TableID:    "1G6MZUiDFgbCeHm1fwDApTTE6HhLQbk-YrrsEBXEi", //Квартали
-  polygon2TableID:    "121jcwoq5ogIfb1NEvkqx1KhZpnt0kgZC34k8w26T", //Лісництво
-  polygon3TableID:    "1ywgm7IGkGe11A31iaLHYVvKuv1OHpy34qtzz2Z0s", //Лісництво
-  //*MODIFY Fusion Tables Requirement* API key. found at https://code.google.com/apis/console/
-  //*Important* this key is for demonstration purposes. please register your own.
-  googleApiKey:       "AIzaSyBAJ1lCOhVarhTpjQZRERIXfZrK2b6LX34",
+  //the encrypted Table ID of your Fusion Table (found under File => About)
+  //NOTE: numeric IDs will be deprecated soon
+  fusionTableId:      "1FMjVRb16OqlkeodL7onaQ5A7jamtpSY0TmHaa-WQ", // Point layer of CT schools
 
-  //MODIFY name of the location column in your Fusion Table.
+  polygon1TableID:    "1J4icqZYUUWrjbd5QrlJWBv9Ax5LeV745AnWhNTl3", //Median Household Income in CT Towns, ACS est 2008-12
+  polygon2TableID:    "1Q2x_e-In4-648ggO0KUfCzVHRlyfAAg43ZS8Y8r_", //Unemployment in CT towns, ACS est 2008-12
+
+  //*New Fusion Tables Requirement* API key. found at https://code.google.com/apis/console/
+  //*Important* this key is for demonstration purposes. please register your own.
+  googleApiKey:       "AIzaSyDIevSvpV-ONb4Pf15VUtwyr_zZa7ccwq4",
+
+  //name of the location column in your Fusion Table.
   //NOTE: if your location column name has spaces in it, surround it with single quotes
   //example: locationColumn:     "'my location'",
-  //if your Fusion Table has two-column lat/lng data, see https://support.google.com/fusiontables/answer/175922
-  locationColumn:     "geometry",
+  locationColumn:     "Address",
 
-  map_centroid:       new google.maps.LatLng(49.0907966,23.3595716), //center that your map defaults to
-  locationScope:      "Ukraine",      //geographical area appended to all address searches
+  map_centroid:       new google.maps.LatLng(41.7682,-72.684), //center that your map defaults to
+  locationScope:      "connecticut",      //geographical area appended to all address searches
   recordName:         "result",       //for showing number of results
   recordNamePlural:   "results",
 
+
   searchRadius:       805,            //in meters ~ 1/2 mile
-  defaultZoom:        10,             //zoom level when map is loaded (bigger is more zoomed in)
-  addrMarkerImage:    'images/blue-pushpin.png',
+  defaultZoom:        12,             //zoom level when map is loaded (bigger is more zoomed in)
+  addrMarkerImage:    'images/blue-pushpin.png', // set to empty '' to hide searched address marker
   currentPinpoint:    null,
 
   initialize: function() {
@@ -81,6 +76,9 @@ var MapsLib = {
 
     MapsLib.searchrecords = null;
 
+    //MODIFY to match 3-bucket GFT values of pre-checked polygon1  - see also further below
+    MapsLib.setDemographicsLabels("$25&ndash;50k", "$50&ndash;100k", "$100&ndash;215k");
+
     // MODIFY if needed: defines background polygon1 and polygon2 layers
     MapsLib.polygon1 = new google.maps.FusionTablesLayer({
       query: {
@@ -99,14 +97,6 @@ var MapsLib = {
       styleId: 2,
       templateId: 2
     });
-    MapsLib.polygon3 = new google.maps.FusionTablesLayer({
-      query: {
-        from:   MapsLib.polygon3ableID,
-        select: "geometry"
-      },
-      styleId: 2,
-      templateId: 2
-    });
 
     //reset filters
     $("#search_address").val(MapsLib.convertToPlainString($.address.parameter('address')));
@@ -115,11 +105,9 @@ var MapsLib = {
     else $("#search_radius").val(MapsLib.searchRadius);
     $(":checkbox").prop("checked", "checked");
     $("#result_box").hide();
-    
-    //-----custom initializers -- default setting to display Polygon1 layer
-    
-    $("#rbPolygon1").attr("checked", "checked"); 
-    
+
+    //-----custom initializers-------
+      $("#rbPolygon1").attr("checked", "checked");
     //-----end of custom initializers-------
 
     //run the default search
@@ -132,9 +120,14 @@ var MapsLib = {
     // MODIFY if needed: shows background polygon layer depending on which checkbox is selected
     if ($("#rbPolygon1").is(':checked')) {
       MapsLib.polygon1.setMap(map);
+      MapsLib.setDemographicsLabels("$25&ndash;50k", "$50&ndash;100k", "$100&ndash;215k"); //MODIFY to match 3 buckets in GFT
     }
-    else if ($("#rbPolygon2").is(':checked')) {
+    if ($("#rbPolygon2").is(':checked')) {
       MapsLib.polygon2.setMap(map);
+      MapsLib.setDemographicsLabels("2&ndash;8%", "8&ndash;14%", "14&ndash;21%"); //MODIFY to match 3 buckets in GFT
+    }
+    if ($("#rbPolygonOff").is(':checked')) {   //the Off statement does not contain a setMap
+      MapsLib.setDemographicsLabels("&ndash;", "&ndash;", "&ndash;");
     }
 
     var address = $("#search_address").val();
@@ -142,24 +135,16 @@ var MapsLib = {
 
     var whereClause = MapsLib.locationColumn + " not equal to ''";
 
-  //-----custom filters for point data layer
-    //---MODIFY column header and values below to match your Google Fusion Table AND index.html
-    //-- TEXTUAL OPTION to display legend and filter by non-numerical data in your table
-   /* var type_column = "'Vid zahodu'";  // -- note use of single & double quotes for two-word column header
-    var tempWhereClause = [];
-    if ( $("#cbType1").is(':checked')) tempWhereClause.push("1,");
-    if ( $("#cbType2").is(':checked')) tempWhereClause.push("2,");
-    if ( $("#cbType3").is(':checked')) tempWhereClause.push("3,");
-    whereClause += " AND " + type_column + " IN ('" + tempWhereClause.join("','") + "')";*/
+    //-----custom filters-------
 
     //-- NUMERICAL OPTION - to display and filter a column of numerical data in your table, use this instead
-        var type_column = "'Vid zahodu'";
+    var type_column = "'TypeNum'";
     var searchType = type_column + " IN (-1,";
     if ( $("#cbType1").is(':checked')) searchType += "1,";
     if ( $("#cbType2").is(':checked')) searchType += "2,";
     if ( $("#cbType3").is(':checked')) searchType += "3,";
-    /*if ( $("#cbType4").is(':checked')) searchType += "4,";
-    if ( $("#cbType5").is(':checked')) searchType += "5,";*/
+    if ( $("#cbType4").is(':checked')) searchType += "4,";
+    if ( $("#cbType5").is(':checked')) searchType += "5,";
     whereClause += " AND " + searchType.slice(0, searchType.length - 1) + ")";
     //-------end of custom filters--------
 
@@ -174,15 +159,31 @@ var MapsLib = {
           $.address.parameter('address', encodeURIComponent(address));
           $.address.parameter('radius', encodeURIComponent(MapsLib.searchRadius));
           map.setCenter(MapsLib.currentPinpoint);
-          map.setZoom(11);
 
-          MapsLib.addrMarker = new google.maps.Marker({
-            position: MapsLib.currentPinpoint,
-            map: map,
-            icon: MapsLib.addrMarkerImage,
-            animation: google.maps.Animation.DROP,
-            title:address
-          });
+          // set zoom level based on search radius
+          if (MapsLib.searchRadius      >= 1610000) map.setZoom(4); // 1,000 miles
+          else if (MapsLib.searchRadius >= 805000)  map.setZoom(5); // 500 miles
+          else if (MapsLib.searchRadius >= 402500)  map.setZoom(6); // 250 miles
+          else if (MapsLib.searchRadius >= 161000)  map.setZoom(7); // 100 miles
+          else if (MapsLib.searchRadius >= 80500)   map.setZoom(8); // 50 miles
+          else if (MapsLib.searchRadius >= 40250)   map.setZoom(9); // 25 miles
+          else if (MapsLib.searchRadius >= 16100)   map.setZoom(11); // 10 miles
+          else if (MapsLib.searchRadius >= 8050)    map.setZoom(12); // 5 miles
+          else if (MapsLib.searchRadius >= 3220)    map.setZoom(13); // 2 miles
+          else if (MapsLib.searchRadius >= 1610)    map.setZoom(14); // 1 mile
+          else if (MapsLib.searchRadius >= 805)     map.setZoom(15); // 1/2 mile
+          else if (MapsLib.searchRadius >= 400)     map.setZoom(16); // 1/4 mile
+          else                                      map.setZoom(17);
+
+          if (MapsLib.addrMarkerImage != '') {
+            MapsLib.addrMarker = new google.maps.Marker({
+              position: MapsLib.currentPinpoint,
+              map: map,
+              icon: MapsLib.addrMarkerImage,
+              animation: google.maps.Animation.DROP,
+              title:address
+            });
+          }
 
           whereClause += " AND ST_INTERSECTS(" + MapsLib.locationColumn + ", CIRCLE(LATLNG" + MapsLib.currentPinpoint.toString() + "," + MapsLib.searchRadius + "))";
 
@@ -190,7 +191,7 @@ var MapsLib = {
           MapsLib.submitSearch(whereClause, map, MapsLib.currentPinpoint);
         }
         else {
-          alert("Ми не знайшли вашого адресу: " + status);
+          alert("We could not find your address: " + status);
         }
       });
     }
@@ -216,9 +217,9 @@ var MapsLib = {
     });
     MapsLib.searchrecords.setMap(map);
     MapsLib.getCount(whereClause);
-    MapsLib.getList(whereClause);
   },
-  // MODIFY if you change the number of Polygon layers
+
+  // MODIFY if you change the number of Polygon layers; TRY designated PolygonOFF layer
   clearSearch: function() {
     if (MapsLib.searchrecords != null)
       MapsLib.searchrecords.setMap(null);
@@ -226,10 +227,24 @@ var MapsLib = {
       MapsLib.polygon1.setMap(null);
     if (MapsLib.polygon2 != null)
       MapsLib.polygon2.setMap(null);
+    if (MapsLib.polygonOFF !=null)
+      MapsLib.polygonOff.setMap(null);
     if (MapsLib.addrMarker != null)
       MapsLib.addrMarker.setMap(null);
     if (MapsLib.searchRadiusCircle != null)
       MapsLib.searchRadiusCircle.setMap(null);
+  },
+
+  setDemographicsLabels: function(left, middle, right) {
+    $('#legend-left').fadeOut('fast', function(){
+      $("#legend-left").html(left);
+    }).fadeIn('fast');
+    $('#legend-middle').fadeOut('fast', function(){
+      $("#legend-middle").html(middle);
+    }).fadeIn('fast');
+    $('#legend-right').fadeOut('fast', function(){
+      $("#legend-right").html(right);
+    }).fadeIn('fast');
   },
 
   findMe: function() {
@@ -277,26 +292,43 @@ var MapsLib = {
       MapsLib.searchRadiusCircle = new google.maps.Circle(circleOptions);
   },
 
-  query: function(selectColumns, whereClause, groupBY, orderBY, limit, callback) {
+  query: function(query_opts, callback) {
+
     var queryStr = [];
-    queryStr.push("SELECT " + selectColumns);
+    queryStr.push("SELECT " + query_opts.select);
     queryStr.push(" FROM " + MapsLib.fusionTableId);
 
-    if (whereClause != "")
-      queryStr.push(" WHERE " + whereClause);
+    // where, group and order clauses are optional
+    if (query_opts.where && query_opts.where != "") {
+      queryStr.push(" WHERE " + query_opts.where);
+    }
 
-    if (groupBY != "")
-      queryStr.push(" GROUP BY " + groupBY);
+    if (query_opts.groupBy && query_opts.roupBy != "") {
+      queryStr.push(" GROUP BY " + query_opts.groupBy);
+    }
 
-    if (orderBY != "")
-      queryStr.push(" ORDER BY " + orderBY);
+    if (query_opts.orderBy && query_opts.orderBy != "" ) {
+      queryStr.push(" ORDER BY " + query_opts.orderBy);
+    }
 
-     if (limit != "")
-      queryStr.push(" LIMIT " + limit);
+    if (query_opts.offset && query_opts.offset !== "") {
+      queryStr.push(" OFFSET " + query_opts.offset);
+    }
+
+    if (query_opts.limit && query_opts.limit !== "") {
+      queryStr.push(" LIMIT " + query_opts.limit);
+    }
+
+
 
     var sql = encodeURIComponent(queryStr.join(" "));
-    // console.log(sql)
-   /* $.ajax({url: "https://www.googleapis.com/fusiontables/v1/query?sql="+sql+"&callback="+callback+"&key="+MapsLib.googleApiKey, dataType: "jsonp"});
+    $.ajax({
+      url: "https://www.googleapis.com/fusiontables/v1/query?sql="+sql+"&key="+MapsLib.googleApiKey,
+      dataType: "json"
+    }).done(function (response) {
+      if (callback) callback(response);
+    });
+
   },
 
   handleError: function(json) {
@@ -309,11 +341,16 @@ var MapsLib = {
         console.log(" Message: " + error[row]["message"]);
       }
     }
-  },*/
+  },
 
   getCount: function(whereClause) {
     var selectColumns = "Count()";
-    MapsLib.query(selectColumns, whereClause,"", "", "", "MapsLib.displaySearchCount");
+    MapsLib.query({
+      select: selectColumns,
+      where: whereClause
+    }, function(response) {
+      MapsLib.displaySearchCount(response);
+    });
   },
 
   displaySearchCount: function(json) {
@@ -330,104 +367,6 @@ var MapsLib = {
       });
     $( "#result_box" ).fadeIn();
   },
-
-  getList: function(whereClause) {
-    // select specific columns from the fusion table to display in th list
-    // NOTE: we'll be referencing these by their index (0 = School, 1 = GradeLevels, etc), so order matters!
-    var selectColumns = "RAYON";
-    MapsLib.query(selectColumns, whereClause,"", "", 500, "MapsLib.displayList");
-  },
-
-   displayList: function(json) {
-    MapsLib.handleError(json);
-    var columns = json["columns"];
-    var rows = json["rows"];
-    var template = "";
-
-    var results = $("#listview");
-    results.empty(); //hide the existing list and empty it out first
-
-    if (rows == null) {
-      //clear results list
-      results.append("<span class='lead'>No results found</span>");
-      }
-    else {
-
-      //set table headers
-      var list_table = "\
-      <table class='table' id ='list_table'>\
-        <thead>\
-          <tr>\
-            <th>Район</th>\
-            <th>Сільська рада&nbsp;&nbsp;</th>\
-            <th>Лісництво</th>\
-            <th>Квартал</th>\
-            <th>Площа</th>\
-          </tr>\
-        </thead>\
-        <tbody>";
-
-      // based on the columns we selected in getList()
-      // rows[row][0] = Район
-      // rows[row][1] = Сільська рада
-      // rows[row][2] = Лісництво
-      // rows[row][3] = Квартал
-      // rows[row][4] = Площа
-      // rows[row][5] = Url
-      // rows[row][6] = Manager
-      // rows[row][7] = Gain_numeric
-      // rows[row][8] = Gain_image
-
-      for (var row in rows) {
-
-        //var school = "<a href='" + rows[row][0] + "'>" + rows[row][1] + "</a>";
-       //var address = rows[row][2] + "<br />" + rows[row][3] + ", " + rows[row][4];
-
-        // list_table += "\ вибірка з таблиці
-        //  <tr>\
-        //    <td>" + rows[row][0] + "</td>\
-        //    <td>" + rows[row][1] + "</td>\
-        //    <td>" + rows[row][2] + "</td>\
-        //    <td>" + rows[row][3] + "</td>\
-        //    <td>" + rows[row][4] + "</td>\
-        //    <td>" + address + "</td>\
-            <td>" + rows[row][6] + "</td>\
-            <td><span data-value='" + rows[row][7] + "'><img src='" + rows[row][8] + "' /></span></td>\
-          </tr>";
-      }
-
-      list_table += "\
-          </tbody>\
-        </table>";
-
-      // add the table to the page
-      results.append(list_table);
-      
-      // init datatable
-      // once we have our table put together and added to the page, we need to initialize DataTables
-      // reference: http://datatables.net/examples/index
-
-      // custom sorting functions defined in js/jquery.dataTables.sorting.js
-      // custom Bootstrap styles for pagination defined in css/dataTables.bootstrap.css
-
-      $("#list_table").dataTable({
-          "aaSorting": [[0, "asc"]], //default column to sort by (School)
-          "aoColumns": [ // tells DataTables how to perform sorting for each column
-              { "sType": "html-string" }, //School name with HTML for the link, which we want to ignore
-              null, // Grades - default text sorting
-              null, // Address - default text sorting
-              null, // Manager - default text sorting
-              { "sType": "data-value-num" } // Gain - sort by a hidden data-value attribute
-          ],
-          "bFilter": false, // disable search box since we already have our own
-          "bInfo": false, // disables results count - we already do this too
-          "bPaginate": true, // enables pagination
-          "sPaginationType": "bootstrap", // custom CSS for pagination in Bootstrap
-          "bAutoWidth": false
-      });
-    }
-   },*/
-
 
   addCommas: function(nStr) {
     nStr += '';
@@ -451,10 +390,10 @@ var MapsLib = {
     if (text == undefined) return '';
   	return decodeURIComponent(text);
   }
-  
+
   //-----custom functions-------
   // NOTE: if you add custom functions, make sure to append each one with a comma, except for the last one.
   // This also applies to the convertToPlainString function above
-  
+
   //-----end of custom functions-------
 }
